@@ -1,0 +1,52 @@
+import json 
+from urllib.request import urlopen
+import cherrypy
+
+import peewee
+from bson import json_util
+
+from playhouse.shortcuts import *
+
+db = peewee.SqliteDatabase('test.db')
+
+class Data(peewee.Model):
+    id = peewee.CharField()
+    latitude =  peewee.TextField(null =True)
+    longitude =  peewee.TextField(null =True)
+    userId =  peewee.CharField(null =True)
+    description =  peewee.TextField(null =True)
+    price =  peewee.IntegerField(null =True)
+    status =  peewee.CharField(null =True)
+    
+    class Meta:
+        database = db
+        db_table = 'userdata'
+    
+
+
+class databaseApiManager(object):
+    
+    @cherrypy.expose
+    def index(self):
+        # alldata = Data.select()
+
+        C = Data.select().where(Data.id == "53fb8f26456e74467b000001" ).dicts
+        return json.dumps(C, default=json_util.default)
+
+if __name__ == '__main__':
+     
+    Data.create_table()
+    
+    ur = "https://run.mocky.io/v3/65c043be-b3a3-40d5-bc17-e2746f5bdcf2"
+    response = urlopen(ur)
+    data_json = json.loads(response.read())
+
+    # with db.atomic():
+    #     query = Data.insert_many(data_json)
+    #     query.execute()
+
+    for item in data_json:
+        Data.create(id = item['id'], latitude = item['loc'][0], longitude = item['loc'][1], userId = item['userId'], description = item['description'], price=item['price'], status = item['status'] )
+    
+
+    cherrypy.quickstart(databaseApiManager())
